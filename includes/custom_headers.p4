@@ -46,10 +46,29 @@ header_type ipv4_metadata_t {
 }
 
 
+header_type meta_t {
+    fields {
+        do_forward : 1;
+        ipv4_sa : 32;
+        ipv4_da : 32;
+        tcp_sp : 16;
+        tcp_dp : 16;
+        nhop_ipv4 : 32;
+        if_ipv4_addr : 32;
+        if_mac_addr : 48;
+        is_ext_if : 1;
+        tcpLength : 16;
+        if_index : 8;
+    }
+}
+
+
+
 
 header ipv4_t ipv4;
 header tcp_t tcp;
 header udp_t udp;
 
+metadata meta_t meta;
 metadata ipv4_metadata_t ipv4_metadata;
 metadata l3_metadata_t l3_metadata;

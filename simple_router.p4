@@ -24,6 +24,8 @@ parser start {
 }
 
 #define ETHERTYPE_IPV4 0x0800
+#define IP_PROT_TCP 0x06
+#define IP_PROT_UDP 0x11
 
 header ethernet_t ethernet;
 
@@ -33,6 +35,25 @@ parser parse_ethernet {
         ETHERTYPE_IPV4 : parse_ipv4;
         default: ingress;
     }
+}
+
+parser parse_ipv4 {
+    extract(ipv4);
+    return select(latest.protocol) {
+        IP_PROT_TCP : parse_tcp;
+        IP_PROT_UDP : parse_udp;
+        default : ingress;
+    }
+}
+
+parser parse_tcp {
+    extract(tcp);
+    return ingress;
+}
+
+parser parse_udp {
+    extract(udp);
+    return ingress;
 }
 
 
@@ -63,9 +84,35 @@ calculated_field ipv4.hdrChecksum  {
     update ipv4_checksum;
 }
 
-parser parse_ipv4 {
-    extract(ipv4);
-    return ingress;
+field_list tcp_checksum_list {
+        ipv4.srcAddr;
+        ipv4.dstAddr;
+        8'0;
+        ipv4.protocol;
+        meta.tcpLength;
+        tcp.srcPort;
+        tcp.dstPort;
+        tcp.seqNo;
+        tcp.ackNo;
+        tcp.dataOffset;
+        tcp.res;
+        tcp.flags;
+        tcp.window;
+        tcp.urgentPtr;
+        payload;
+}
+
+field_list_calculation tcp_checksum {
+    input {
+        tcp_checksum_list;
+    }
+    algorithm : csum16;
+    output_width : 16;
+}
+
+calculated_field tcp.checksum {
+    verify tcp_checksum if(valid(tcp));
+    update tcp_checksum if(valid(tcp));
 }
 
 
