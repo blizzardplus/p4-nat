@@ -12,7 +12,7 @@ To compile the p4 code:
 p4c-bm --json <path to JSON file> <path to P4 file>
 
 First Terminal
-cd mininet
+#cd mininet
 sudo python /home/p4/Desktop/repos/behavioral-model/mininet/1sw_demo.py --behavioral-exe ./simple_router --json ./simple_router.json
 
 Second Terminal

@@ -19,6 +19,7 @@
 #include "includes/custom_headers.p4"
 
 
+
 parser start {
     return parse_ethernet;
 }
@@ -26,6 +27,7 @@ parser start {
 #define ETHERTYPE_IPV4 0x0800
 #define IP_PROT_TCP 0x06
 #define IP_PROT_UDP 0x11
+#define ROUTER_IPV4 "10.0.2.10"
 
 header ethernet_t ethernet;
 
@@ -41,7 +43,8 @@ parser parse_ipv4 {
     extract(ipv4);
     return select(latest.protocol) {
         IP_PROT_TCP : parse_tcp;
-        IP_PROT_UDP : parse_udp;
+        // TODO: 
+        //IP_PROT_UDP : parse_udp;
         default : ingress;
     }
 }
@@ -51,10 +54,11 @@ parser parse_tcp {
     return ingress;
 }
 
-parser parse_udp {
+// TODO: 
+/*parser parse_udp {
     extract(udp);
     return ingress;
-}
+}*/
 
 
 field_list ipv4_checksum_list {
@@ -175,14 +179,77 @@ table send_frame {
     size: 256;
 }
 
+action rewrite_dstAddrTCP(ipv4Addr, port) {
+    modify_field(ipv4.dstAddr, ipv4Addr);
+    modify_field(tcp.dstPort, port);
+}
+
+table rev_nat_tcp {
+    reads {
+        ipv4.dstAddr : exact;
+        tcp.dstPort : exact;
+    }
+    actions {
+        rewrite_dstAddrTCP;
+        _drop;
+    }
+    size: 32768;
+}
+
+action rewrite_srcAddrTCP(ipv4Addr, port) {
+    modify_field(ipv4.srcAddr, ipv4Addr);
+    modify_field(tcp.srcPort, port);
+}
+
+
+#define CPU_SESSION_PORT  3
+action send_to_cpu() {
+    modify_field(standard_metadata.egress_spec, CPU_SESSION_PORT);
+}
+
+table fwd_nat_tcp {
+    reads {
+        ipv4.srcAddr : exact;
+        tcp.srcPort : exact;
+    }
+    actions {
+        rewrite_srcAddrTCP;
+        send_to_cpu; //default action
+    }
+    size: 32768;
+}
+
+table match_nat_ip {
+    reads {
+        ipv4.srcAddr : exact;
+    }
+    actions {
+        _drop;
+    }
+}
+
+
 control ingress {
     if(valid(ipv4) and ipv4.ttl > 0) {
+        //Check if dest IPv4 address belongs to us
+        if(valid(tcp)) {
+            apply(match_nat_ip){
+                hit {
+                    apply(rev_nat_tcp);
+                }
+            }
+        }
+        // TODO: else if udp
         apply(ipv4_lpm);
         apply(forward);
     }
 }
 
 control egress {
+    if(valid(tcp)) {
+        apply(fwd_nat_tcp);
+    }
+    // TODO: else if udp
     apply(send_frame);
 }
 
