@@ -59,7 +59,7 @@ field_list_calculation ipv4_checksum {
 }
 
 calculated_field ipv4.hdrChecksum  {
-    verify ipv4_checksum if (ipv4.ihl == 5);
+    // verify ipv4_checksum if (ipv4.ihl == 5); //BMV2 ignores verify checksums
     update ipv4_checksum if (ipv4.ihl == 5);
 }
 
@@ -90,7 +90,7 @@ field_list_calculation tcp_checksum {
 }
 
 calculated_field tcp.checksum {
-    verify tcp_checksum if(valid(tcp));
+    //verify tcp_checksum if(valid(tcp));  //BMV2 ignores verify checksums
     update tcp_checksum if(valid(tcp));
 }
 

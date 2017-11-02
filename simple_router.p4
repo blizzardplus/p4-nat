@@ -14,7 +14,7 @@
  */
 
 
-#include "p4_table_sizes.h"
+#include "includes/p4_table_sizes.h"
 #include "includes/parser.p4"
 
 
@@ -82,9 +82,13 @@ table send_frame {
     size: 256;
 }
 
-action rewrite_dstAddrTCP(ipv4Addr, port) {
+action rewrite_dstAddrTCP(ipv4Addr, tcpPort, dmac, nhop_ipv4, port){
     modify_field(ipv4.dstAddr, ipv4Addr);
-    modify_field(tcp.dstPort, port);
+    modify_field(tcp.dstPort, tcpPort);
+    modify_field(ethernet.dstAddr, dmac);
+    modify_field(routing_metadata.nhop_ipv4, nhop_ipv4);
+    modify_field(standard_metadata.egress_spec, port);
+    add_to_field(ipv4.ttl, -1);
 }
 
 table rev_nat_tcp {
@@ -107,7 +111,7 @@ action rewrite_srcAddrTCP(ipv4Addr, port) {
 
 #define CPU_SESSION_PORT  3
 action send_to_cpu() {
-    modify_field(standard_metadata.egress_spec, CPU_SESSION_PORT);
+    //modify_field(standard_metadata.egress_spec, CPU_SESSION_PORT);
 }
 
 table fwd_nat_tcp {
@@ -135,7 +139,7 @@ action reg() {
 
 table match_nat_ip {
     reads {
-        ipv4.srcAddr : lpm;
+        ipv4.dstAddr : lpm;
     }
     actions {
         reg;
@@ -147,18 +151,20 @@ control ingress {
     if(valid(ipv4) and ipv4.ttl > 0) {
         //Check if dest IPv4 address belongs to us
         if(valid(tcp)) {
-            apply(match_nat_ip);//{
-                //hit {
-                //    apply(rev_nat_tcp);
-               // }
-            //}
+            apply(match_nat_ip){
+                hit {
+                    apply(rev_nat_tcp);
+                }
+                miss {
+                    apply(ipv4_lpm);
+                    apply(forward);
+                }
+            }
         }
-        else
-        {
+        //else
+        //{
         // TODO: else if udp
-        apply(ipv4_lpm);
-        apply(forward);
-        }
+        //}
     }
 }
 
@@ -168,48 +174,3 @@ control egress {
     }
     apply(send_frame);
 }
-
-
-
-
-/*parser start {
-    return parse_ethernet;
-}
-
-#define ETHERTYPE_IPV4 0x0800
-#define IP_PROTOCOLS_ICMP 1
-#define IP_PROTOCOLS_TCP 6
-#define IP_PROTOCOLS_UDP 17
-#define ROUTER_IPV4 "10.0.2.10"
-
-
-parser parse_ethernet {
-    extract(ethernet);
-    return select(latest.etherType) {
-        ETHERTYPE_IPV4 : parse_ipv4;
-        default: ingress;
-    }
-}
-
-parser parse_ipv4 {
-    extract(ipv4);
-    return select(latest.protocol) {
-//        IP_PROTOCOLS_ICMP : parse_icmp;
-        IP_PROTOCOLS_TCP : parse_tcp;
-//        IP_PROTOCOLS_UDP : parse_udp;
-        default: ingress;
-    }
-}
-
-parser parse_tcp {
-    //extract(tcp);
-    return ingress;
-}
-
-// TODO: 
-//parser parse_udp {
-//    extract(udp);
-//    return ingress;
-//}
-
-*/

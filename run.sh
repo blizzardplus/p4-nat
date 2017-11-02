@@ -29,29 +29,40 @@ CLI_PATH=$BMV2_PATH/targets/simple_switch/sswitch_CLI
 # minutes to give it time to start, then add the entries and put the switch
 # process back in the foreground
 set -m
+rm simple_router.json
 $P4C_BM_SCRIPT simple_router.p4 --json simple_router.json
 # This gets root permissions, and gives libtool the opportunity to "warm-up"
 sudo $SWITCH_PATH >/dev/null 2>&1
 
-
+if [ "$#" -ne 1 ]; then
+  echo "Error!! Usage: ./run.sh [router|switch]"
+  exit 1
+fi
 
 if [ $1 = "router" ]; then
+    CLI_PATH=$BMV2_PATH/targets/simple_router/runtime_CLI
     sudo python ./mininet/1sw_demo.py --behavioral-exe \
         /home/p4/Desktop/repos/p4-nat/p4-nat/simple_router \
-        --json /home/p4/Desktop/repos/p4-nat/p4-nat/simple_router.json
+        --json /home/p4/Desktop/repos/p4-nat/p4-nat/simple_router.json & 
+        sleep 2
+        $CLI_PATH < commands.txt
+        echo "READY!!!"
+        fg
 elif [ $1 = "switch" ]; then
+    sudo ./tools/veth_teardown.sh
+    sudo ./tools/veth_setup.sh
     sudo $SWITCH_PATH simple_router.json \
         -i 0@veth0 -i 1@veth2 -i 2@veth4 -i 3@veth6 -i 4@veth8 \
         --nanolog ipc:///tmp/bm-0-log.ipc \
         --pcap &
+    sleep 2
+    $CLI_PATH simple_router.json < commands.txt
+    echo "READY!!!"
+    fg
 else
     echo "Error!! Usage: ./run.sh [router|switch]"
-    exit -1
+    exit 1
 fi
-sleep 2
-$CLI_PATH simple_router.json < commands.txt
-echo "READY!!!"
-fg
 
 
 
