@@ -54,6 +54,7 @@ elif [ $1 = "switch" ]; then
     sudo $SWITCH_PATH simple_router.json \
         -i 0@veth0 -i 1@veth2 -i 2@veth4 -i 3@veth6 -i 4@veth8 \
         --nanolog ipc:///tmp/bm-0-log.ipc \
+        --debugger \
         --pcap &
     sleep 2
     $CLI_PATH simple_router.json < commands.txt

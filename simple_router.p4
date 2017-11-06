@@ -82,13 +82,10 @@ table send_frame {
     size: 256;
 }
 
-action rewrite_dstAddrTCP(ipv4Addr, tcpPort, dmac, nhop_ipv4, port){
+action rewrite_dstAddrTCP(ipv4Addr, tcpPort){
     modify_field(ipv4.dstAddr, ipv4Addr);
     modify_field(tcp.dstPort, tcpPort);
-    modify_field(ethernet.dstAddr, dmac);
-    modify_field(routing_metadata.nhop_ipv4, nhop_ipv4);
-    modify_field(standard_metadata.egress_spec, port);
-    add_to_field(ipv4.ttl, -1);
+    modify_field(meta.natReverse, 1);
 }
 
 table rev_nat_tcp {
@@ -106,12 +103,23 @@ table rev_nat_tcp {
 action rewrite_srcAddrTCP(ipv4Addr, port) {
     modify_field(ipv4.srcAddr, ipv4Addr);
     modify_field(tcp.srcPort, port);
+    modify_field(meta.natForward, 1);
 }
 
 
-#define CPU_SESSION_PORT  3
+field_list copy_to_cpu_fields {
+    standard_metadata;
+}
+
+//This should be learned
+#define CNTRL_MAC  0x000400000000
+#define CNTRL_NHOP 0x0A00000A
+#define CNTRL_PORT 1
 action send_to_cpu() {
-    //modify_field(standard_metadata.egress_spec, CPU_SESSION_PORT);
+    modify_field(ethernet.dstAddr, CNTRL_MAC);
+    modify_field(routing_metadata.nhop_ipv4, CNTRL_NHOP);
+    modify_field(standard_metadata.egress_spec, CNTRL_PORT);
+    add_to_field(ipv4.ttl, -1);
 }
 
 table fwd_nat_tcp {
@@ -126,11 +134,6 @@ table fwd_nat_tcp {
     size: FWD_NAT_SIZE;
 }
 
-
-#define CPU_MIRROR_SESSION_ID                  250
-field_list copy_to_cpu_fields {
-    standard_metadata;
-}
 
 // This is nop action to store an entry into the table
 action reg() {
@@ -155,21 +158,15 @@ control ingress {
                 hit {
                     apply(rev_nat_tcp);
                 }
-                miss {
-                    apply(ipv4_lpm);
-                    apply(forward);
-                }
             }
         }
-        //else
-        //{
-        // TODO: else if udp
-        //}
+        apply(ipv4_lpm);
+        apply(forward);
     }
 }
 
 control egress {
-    if(valid(tcp)) {
+    if(valid(tcp) and meta.natForward == 0) {
         apply(fwd_nat_tcp);
     }
     apply(send_frame);

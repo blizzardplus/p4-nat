@@ -30,7 +30,9 @@ header udp_t udp;
 
 header_type meta_t {
     fields {
-        tcpLength : 16;
+        tcpLength  : 16;
+        natReverse : 1;
+        natForward : 1;
     }
 }
 

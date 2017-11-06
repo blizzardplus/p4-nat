@@ -13,5 +13,4 @@ table_add ipv4_lpm set_nhop 10.0.1.10/32 => 10.0.1.10 2
 table_add ipv4_lpm set_nhop 10.0.2.10/32 => 10.0.2.10 3
 table_add match_nat_ip reg 10.1.0.0/24 => 
 table_add fwd_nat_tcp rewrite_srcAddrTCP 10.0.1.10 33333 => 10.1.0.10 44444
-table_add rev_nat_tcp rewrite_dstAddrTCP 10.1.0.10 44444 => 10.0.1.10 33333 00:04:00:00:00:01 10.0.1.10 2
-mirroring_add 250 1
+table_add rev_nat_tcp rewrite_dstAddrTCP 10.1.0.10 44444 => 10.0.1.10 33333

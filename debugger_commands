@@ -1,0 +1,13 @@
+set_wp standard_metadata.egress_port
+set_wp standard_metadata.egress_spec
+set_wp routing_metadata.nhop_ipv4
+set_wp ethernet.dstAddr
+
+
+
+unset_wp standard_metadata.egress_port
+unset_wp standard_metadata.egress_spec
+unset_wp routing_metadata.nhop_ipv4
+unset_wp ethernet.dstAddr
+
+b action send_to_cpu

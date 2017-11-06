@@ -18,4 +18,11 @@ sudo python ~/Desktop/repos/p4-nat/p4-nat/mininet/1sw_demo.py --behavioral-exe /
 
 Second Terminal
 cd targets/simple_router
-./runtime_CLI < commands.txt
+./runtime_CLI < commands.txt_drop
+
+
+
+## Testing: 
+
+sudo ./send.py 10.0.1.10 "HIIIII" veth2
+sudo ./receive.py veth4
