@@ -595,6 +595,8 @@ def handle_bad_input(f):
         except InvalidTableOperation as e:
             error = TableOperationErrorCode._VALUES_TO_NAMES[e.code]
             print "Invalid table operation (%s)" % error
+            if e.code == TableOperationErrorCode.DUPLICATE_ENTRY:
+                raise
         except InvalidCounterOperation as e:
             error = CounterOperationErrorCode._VALUES_TO_NAMES[e.code]
             print "Invalid counter operation (%s)" % error
