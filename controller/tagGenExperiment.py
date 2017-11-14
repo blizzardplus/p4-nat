@@ -38,7 +38,7 @@ class PRNGExp:
         self.tagLength  = tagLength
         self.tagByteLen = int(math.ceil(float(tagLength) / float(8)))
         self.maskLength = tagLength % 8
-        self.maskNeeded = True if self.maskLength == 0 else False
+        self.maskNeeded = False if self.maskLength == 0 else False
         self.rndDesc = Random.new()
         self.totalTags = 0
         self.totalSuccTags = 0 # Total number of tags successfully added
@@ -46,7 +46,7 @@ class PRNGExp:
 
 
 FlowCount = 1000000
-indvTestRepScale = 50000
+indvTestRepScale = 10000
 testRepScale =  20
 testRep = 10
 
@@ -56,17 +56,18 @@ def testFunction(tagLength, localFlowCount):
     for i in range(localFlowCount):
         prng.findNextTag()
         prng2Array[i] = prng.totalTags
-        #if (i % indvTestRepScale) == 0:
-        #    print("%s : %s" % (i , prng2Array[i]))
+        if (i % indvTestRepScale) == 0:
+            print("%s : %s" % (i , prng2Array[i]))
     return prng2Array
 
 def testExecAggr(tagLength):
     localFlowCount = min(FlowCount, int(0.9 * float(2**tagLength)))
+    print ("Flowcount considered %s:" % localFlowCount)
     sumArray = [0] * localFlowCount
     for i in range(testRep):
+        print("Iteration %s" % i)
         testArray = testFunction(tagLength, localFlowCount)
         sumArray = [x + y for x, y in zip(sumArray, testArray)]
-        print(i)
     meanArray = [int(float(x)/float(testRep)) for x in sumArray]
     for t in range(len(meanArray)):
         if (t % indvTestRepScale) == 0:
@@ -74,5 +75,5 @@ def testExecAggr(tagLength):
 
 if __name__ == '__main__':
     for i in range (16, 24, 2):
-        print("Executing for %s", i)
+        print("Executing for %s"% i)
         testExecAggr(i)
