@@ -1,5 +1,7 @@
 from Crypto import Random
 import math
+import matplotlib.pyplot as plt
+import numpy
 
 #global rndDesc
 
@@ -48,7 +50,7 @@ class PRNGExp:
 FlowCount = 1000000
 indvTestRepScale = 10000
 testRepScale =  20
-testRep = 10
+testRep = 2
 
 def testFunction(tagLength, localFlowCount):
     prng = PRNGExp(tagLength)
@@ -71,9 +73,13 @@ def testExecAggr(tagLength):
     meanArray = [int(float(x)/float(testRep)) for x in sumArray]
     for t in range(len(meanArray)):
         if (t % indvTestRepScale) == 0:
-            print("%s : %s" % (i , meanArray[t]))
+            print("%s : %s" % (t , meanArray[t]))
+    plt.plot(range(len(meanArray)), meanArray , c=numpy.random.rand(3,))
 
 if __name__ == '__main__':
-    for i in range (16, 24, 2):
+    plt.figure(1)
+    for i in range (16, 30, 2):
         print("Executing for %s"% i)
         testExecAggr(i)
+    plt.ylabel('some numbers')
+    plt.show()
